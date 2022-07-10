@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::{env, fs};
 use std::path::PathBuf;
+use std::{env, fs};
 
 use clap::Parser;
 
@@ -38,7 +38,7 @@ fn main() {
             let content = fs::read_to_string(&path).expect("Unable to read file");
             let content = content.replace(&replace, &json);
             fs::write(&path, &content).expect("Unable to write file");
-        },
+        }
         (Some(path), None) => fs::write(path, json).expect("Unable to write file"),
         (None, Some(_)) => panic!("--replace can only be used with --out"),
         (None, None) => println!("{}", json),
@@ -84,7 +84,6 @@ fn encode_vars(vars: &HashMap<String, String>, escape_string: bool) -> String {
 mod tests {
     use super::*;
 
-   
     #[test]
     fn test_encode_vars() {
         let vars = HashMap::from([
@@ -92,7 +91,8 @@ mod tests {
             ("BAR".to_string(), "bar".to_string()),
         ]);
         let json_string = encode_vars(&vars, false);
-        let x: serde_json::Map<String, serde_json::Value> = serde_json::from_str(&json_string).expect("encode_vars didn't produce valid json");
+        let x: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_str(&json_string).expect("encode_vars didn't produce valid json");
         assert!(x.contains_key("FOO"));
         assert_eq!(x["FOO"], "foo");
         assert!(x.contains_key("BAR"));
