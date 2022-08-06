@@ -64,10 +64,10 @@ jobs:
           src=$(pwd)
           stage=$(mktemp -d)
           ver=${GITHUB_REF#refs/tags/}
-          asset_name="env-to-json-$ver-${{ matrix.target }}.${{ matrix.archive }}"
+          asset_name="inject-env-$ver-${{ matrix.target }}.${{ matrix.archive }}"
           ASSET_PATH="$src/$asset_name"
           CHECKSUM_PATH="$ASSET_PATH.sha256"
-          cp target/${{ matrix.target }}/release/env-to-json $stage/
+          cp target/${{ matrix.target }}/release/inject-env $stage/
           cd $stage
           ${{ matrix.archive-cmd }} $ASSET_PATH *
           cd $src
