@@ -27,12 +27,16 @@ struct Args {
     /// Output json as encoded string with proper escape of quotes
     #[clap(short, long, value_parser, default_value_t = false)]
     as_encoded_string: bool,
+
+    /// Format value. Usefull to set it to variagle (eg. "window.APP_ENV = {}")
+    #[clap(short, long, value_parser, default_value = "{}")]
+    format: String,
 }
 
 fn main() {
     let args = Args::parse();
     let env_vars = collect_env_vars(&args.prefix, args.strip_prefix);
-    let json = encode_vars(&env_vars, args.as_encoded_string);
+    let json = encode_vars(&env_vars, args.as_encoded_string, &args.format);
     match (args.out, args.replace) {
         (Some(path), Some(replace)) => {
             let content = fs::read_to_string(&path).expect("Unable to read file");
@@ -72,12 +76,13 @@ fn collect_env_vars(prefix: &Option<String>, strip_prefix: bool) -> HashMap<Stri
     result
 }
 
-fn encode_vars(vars: &HashMap<String, String>, escape_string: bool) -> String {
+fn encode_vars(vars: &HashMap<String, String>, escape_string: bool, format: &str) -> String {
     let mut json = serde_json::to_string(vars).expect("Unable to generate json");
     if escape_string {
         json = serde_json::to_string(&json).expect("Unable to generate escape string")
     }
-    json
+
+    format.replace("{}", &json)
 }
 
 #[cfg(test)]
@@ -90,7 +95,25 @@ mod tests {
             ("FOO".to_string(), "foo".to_string()),
             ("BAR".to_string(), "bar".to_string()),
         ]);
-        let json_string = encode_vars(&vars, false);
+        let json_string = encode_vars(&vars, false, "{}");
+        let x: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_str(&json_string).expect("encode_vars didn't produce valid json");
+        assert!(x.contains_key("FOO"));
+        assert_eq!(x["FOO"], "foo");
+        assert!(x.contains_key("BAR"));
+        assert_eq!(x["BAR"], "bar");
+    }
+
+    #[test]
+    fn test_format_the_output() {
+        let vars = HashMap::from([
+            ("FOO".to_string(), "foo".to_string()),
+            ("BAR".to_string(), "bar".to_string()),
+        ]);
+        let result = encode_vars(&vars, false, "window.APP_ENV = {}");
+        assert!(result.starts_with("window.APP_ENV = {"));
+
+        let json_string = result.replace("window.APP_ENV = ", "");
         let x: serde_json::Map<String, serde_json::Value> =
             serde_json::from_str(&json_string).expect("encode_vars didn't produce valid json");
         assert!(x.contains_key("FOO"));
