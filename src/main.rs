@@ -28,9 +28,9 @@ struct Args {
     #[clap(short, long, value_parser, default_value_t = false)]
     as_encoded_string: bool,
 
-    /// Format value. Usefull to set it to variagle (eg. "window.APP_ENV = {}") 
+    /// Format value. Usefull to set it to variagle (eg. "window.APP_ENV = {}")
     #[clap(short, long, value_parser, default_value = "{}")]
-    format: String
+    format: String,
 }
 
 fn main() {
@@ -81,7 +81,7 @@ fn encode_vars(vars: &HashMap<String, String>, escape_string: bool, format: &str
     if escape_string {
         json = serde_json::to_string(&json).expect("Unable to generate escape string")
     }
-    
+
     format.replace("{}", &json)
 }
 
