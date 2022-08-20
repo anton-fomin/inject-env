@@ -33,3 +33,44 @@ Only environment variables with prefix end up in the result json.
 For security reasons you should always use prefix to avoid secrets in your publicly accessible files.
 
 See `inject-env -h` for more options
+
+
+## Example nginx Dockerfile
+
+```
+FROM node:16-alpine as builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json /app/
+
+RUN npm ci
+
+COPY . /app
+
+RUN npm run build
+
+FROM nginx:1.23-alpine
+
+RUN wget -O inject-env.tar.gz https://github.com/anton-fomin/inject-env/releases/download/v0.1.1/inject-env-v0.1.1-x86_64-unknown-linux-musl.tar.gz && \
+  tar -xzf inject-env.tar.gz && mv inject-env /usr/local/bin/
+
+COPY deploy/bin/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 80
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+CMD ["nginx", "-g", "daemon off;"]
+
+```
+
+Where entrypoint is
+```
+#!/bin/sh
+inject-env -o /usr/share/nginx/html/index.html -r '/*APP_ENV*/' --prefix APP_ENV_ --format 'window.APP_ENV = {}'
+exec "$@"
+```
